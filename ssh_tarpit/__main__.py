@@ -6,9 +6,9 @@ import signal
 import logging
 from functools import partial
 
-from .server import TarpitServer
-from .constants import LogLevel
-from .utils import setup_logger, enable_uvloop
+from server import TarpitServer
+from constants import LogLevel
+from utils import setup_logger, enable_uvloop
 
 
 def parse_args():

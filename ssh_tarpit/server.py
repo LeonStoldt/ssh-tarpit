@@ -4,6 +4,8 @@ import weakref
 import random
 import logging
 
+from postgres import createTable, persist
+
 class TarpitServer:
     SHUTDOWN_TIMEOUT = 5
 
@@ -20,6 +22,7 @@ class TarpitServer:
         self._dualstack = dualstack
         self._interval = interval
         self._children = weakref.WeakSet()
+        createTable()
 
     async def stop(self):
         self._server.close()
@@ -44,6 +47,7 @@ class TarpitServer:
                 finally:
                     direct_sock.detach()
         peer_addr = writer.transport.get_extra_info('peername')
+        persist(sock)
         self._logger.info("Client %s connected", str(peer_addr))
         try:
             while True:
@@ -65,8 +69,7 @@ class TarpitServer:
 
     async def start(self):
         def _spawn(reader, writer):
-            self._children.add(
-                self._loop.create_task(self.handler(reader, writer)))
+            self._children.add(self._loop.create_task(self.handler(reader, writer)))
 
         if self._dualstack:
             sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
