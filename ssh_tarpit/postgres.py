@@ -2,6 +2,7 @@ import psycopg2
 import ipinfo
 import pprint
 import config
+import pygeohash
 
 
 def create_table():
@@ -15,8 +16,9 @@ def create_table():
         ip VARCHAR(255),
         port INTEGER NOT NULL,
         latitude FLOAT ,
-        loc VARCHAR(255),
         longitude FLOAT,
+        loc VARCHAR(255),
+        geohash VARCHAR(255),
         organisation VARCHAR(255),
         postal VARCHAR(10),
         region VARCHAR(255),
@@ -28,23 +30,24 @@ def create_table():
 def persist(socket):
     ip, port = socket.getpeername()
     handler = ipinfo.getHandler(config.ACCESS_TOKEN)
-    details = handler.getDetails(ip)
-    city = details.city
-    country = details.country
-    country_name = details.country_name
-    hostname = details.hostname
-    latitude = details.latitude
-    loc = details.loc
-    longitude = details.longitude
-    organisation = details.org
-    postal = details.postal
-    region = details.region
-    timezone = details.timezone
-    pprint.pprint(details.all)
+    details = handler.getDetails(ip).all
+    pprint.pprint(details)
+    city = details.get("city")
+    country = details.get("country")
+    country_name = details.get("country_name")
+    hostname = details.get("hostname")
+    latitude = float(details.get('latitude', 0))
+    longitude = float(details.get('longitude', 0))
+    loc = details.get("loc")
+    organisation = details.get("org")
+    postal = details.get("postal")
+    region = details.get("region")
+    timezone = details.get("timezone")
+    geohash = pygeohash.encode(latitude, longitude)
     query = """
-    INSERT INTO ip_data(city, country, country_name, hostname, ip, port, latitude, loc, longitude, organisation, postal, region, timezone, ts)
-    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP);"""
-    execute(query, (city, country, country_name, hostname, ip, port, latitude, loc, longitude, organisation, postal, region, timezone))
+    INSERT INTO ip_data(city, country, country_name, hostname, ip, port, latitude, longitude, loc, geohash , organisation, postal, region, timezone, ts)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP);"""
+    execute(query, (city, country, country_name, hostname, ip, port, latitude, longitude, loc, geohash, organisation, postal, region, timezone))
 
 
 def execute(query, args=()):
