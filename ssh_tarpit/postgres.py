@@ -3,7 +3,8 @@ import ipinfo
 import pprint
 import config
 
-def createTable():
+
+def create_table():
     execute("""
     CREATE TABLE IF NOT EXISTS ip_data (
         id SERIAL PRIMARY KEY,
@@ -19,8 +20,9 @@ def createTable():
         organisation VARCHAR(255),
         postal VARCHAR(10),
         region VARCHAR(255),
-        timezone VARCHAR(255)
-    );""")
+        timezone VARCHAR(255),
+        ts TIMESTAMP WITH TIME ZONE
+        );""")
 
 
 def persist(socket):
@@ -39,44 +41,22 @@ def persist(socket):
     region = details.region
     timezone = details.timezone
     pprint.pprint(details.all)
-    sql = """INSERT INTO vendors(vendor_name)
-             VALUES(%s) RETURNING vendor_id;"""
     query = """
-    INSERT INTO ip_data(city, country, country_name, hostname, ip, port, latitude, loc, longitude, organisation, postal, region, timezone)
-    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"""
-    print(query, city, country, country_name, hostname, ip, port, latitude, loc, longitude, organisation, postal, region, timezone)
-    executeWithParams(query, city, country, country_name, hostname, ip, port, latitude, loc, longitude, organisation, postal, region, timezone)
+    INSERT INTO ip_data(city, country, country_name, hostname, ip, port, latitude, loc, longitude, organisation, postal, region, timezone, ts)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP);"""
+    execute(query, (city, country, country_name, hostname, ip, port, latitude, loc, longitude, organisation, postal, region, timezone))
 
 
-def executeWithParams(query, city, country, country_name, hostname, ip, port, latitude, loc, longitude, organisation, postal, region, timezone):
+def execute(query, args=()):
     try:
         connection = psycopg2.connect(
-            host="localhost",
-            database="ssh-tarpit",
-            user="postgres",
-            password="postgres")
+            host=config.HOST,
+            database=config.DATABASE,
+            user=config.USER,
+            password=config.PASSWORD)
 
         cursor = connection.cursor()
-        cursor.execute(query, (city, country, country_name, hostname, ip, port, latitude, loc, longitude, organisation, postal, region, timezone))
-        connection.commit()
-        cursor.close()
-    except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
-    finally:
-        if connection is not None:
-            connection.close()
-
-
-def execute(query):
-    try:
-        connection = psycopg2.connect(
-            host="localhost",
-            database="ssh-tarpit",
-            user="postgres",
-            password="postgres")
-
-        cursor = connection.cursor()
-        cursor.execute(query)
+        cursor.execute(query, args)
         connection.commit()
         cursor.close()
     except (Exception, psycopg2.DatabaseError) as error:

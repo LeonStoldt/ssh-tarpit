@@ -4,7 +4,7 @@ import weakref
 import random
 import logging
 
-from postgres import createTable, persist
+from postgres import create_table, persist
 
 class TarpitServer:
     SHUTDOWN_TIMEOUT = 5
@@ -22,7 +22,7 @@ class TarpitServer:
         self._dualstack = dualstack
         self._interval = interval
         self._children = weakref.WeakSet()
-        createTable()
+        create_table()
 
     async def stop(self):
         self._server.close()
